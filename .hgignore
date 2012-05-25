@@ -1,0 +1,25 @@
+syntax: glob
+#IDE files
+.settings/*
+.project
+.pydevproject
+.cache/*
+
+#other files
+.coverage
+*.swp
+*.pyc
+*.pyo
+*.orig
+*.egg-info
+*~
+.tox/
+stuff
+pip-log.txt
+.Python
+.DS_Store
+Thumbs.db
+build/
+dist/
+.build/
+MANIFEST
