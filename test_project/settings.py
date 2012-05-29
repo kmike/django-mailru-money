@@ -16,7 +16,14 @@ USE_TZ = True
 ROOT_URLCONF = 'urls'
 
 SECRET_KEY = 'mmq7j3kr3a0@^%qx4m*tmt30tbt24#^zmai_ba!1@_*j+_4z5a'
-INSTALLED_APPS = 'mailru_money', 'test_app'
+INSTALLED_APPS = ['mailru_money', 'test_app']
+
+# south doesn't support python 3
+try:
+    import south
+    INSTALLED_APPS.append('south')
+except ImportError:
+    pass
 
 MAILRU_MONEY_SHOP_ID = 'shop-id'
 MAILRU_MONEY_SECRET_KEY = 'secret-key'
