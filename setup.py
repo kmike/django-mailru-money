@@ -14,7 +14,7 @@ except NameError:
     # python3 doesn't need this
     pass
 
-version='0.0.1'
+version='0.0.2'
 
 setup(
     name='django-mailru-money',
@@ -22,7 +22,7 @@ setup(
     author='Mikhail Korobov',
     author_email='kmike84@gmail.com',
 
-    packages=['mailru_money'],
+    packages=['mailru_money', 'mailru_money/migrations'],
 
     url='https://bitbucket.org/kmike/django-mailru-money/',
     license = 'MIT license',
