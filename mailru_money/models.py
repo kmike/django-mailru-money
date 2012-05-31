@@ -5,7 +5,6 @@ from django.contrib.contenttypes.generic import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from .signals import order_status_changed
-from . import settings
 
 logger = logging.getLogger(__name__)
 
