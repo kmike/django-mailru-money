@@ -113,8 +113,9 @@ django-mailru-money поддерживает и другую схему рабо
 
 Баг-трекер - на битбакете: https://bitbucket.org/kmike/django-mailru-money/issues/new
 
-Для запуска тестов склонируйте репозиторий, установите `tox <tox.testrun.org>`_
+Для запуска тестов склонируйте репозиторий, установите `tox <http://tox.testrun.org>`_
 и запустите
+
 ::
 
     $ tox
