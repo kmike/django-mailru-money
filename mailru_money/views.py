@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import logging
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from .forms import ResultForm
-from . import signals
+from .forms import ResultForm, OrderResultForm, ERROR_GENERIC
+from . import signals, settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +29,31 @@ def _ResultResponse(is_accepted, form, error_code=None):
 
 
 @csrf_exempt
-def mailru_money_result(request, form_cls=ResultForm):
+def mailru_money_result(request, form_cls=OrderResultForm):
     """
-    Result URL handler.
+    Result URL handler. By default assumes that MailruOrderForm
+    was used to create an order (pass form_cls=ResultForm if that
+    is not the case).
 
-    On successful access `mailru_money.signals.result_success` signal is sent.
-    Orders should be processed in signal handler.
+    If order state is changed then ``order_status_changed`` signal
+    will be sent. It can be used to handle the payment, e.g.::
+
+        from mailru_money.signals import order_status_changed
+        from mailru_money.models import MailruOrder
+
+        def order_handler(sender, order, old_status, **kwargs):
+            if order.state == MailruOrder.PAID:
+                # order is payed, deliver an item
+                order.pay_for.deliver()
+            elif order.state == MailruOrder.REJECTED:
+                order.pay_for.unblock()
+
+        order_status_changed.connect(order_handler)
+
+    Extra signals (result_success and result_failure) can be used for
+    less trivial order processing.
     """
+
     form = form_cls(request.POST)
     signal_kwargs = dict(
         sender = mailru_money_result,
@@ -51,11 +69,9 @@ def mailru_money_result(request, form_cls=ResultForm):
 
         # form is invalid
         signals.result_failure.send(**signal_kwargs)
-
         return _ResultResponse(False, form, form.error_code())
 
     except Exception as e:
         logger.error(e)
-        return _ResultResponse(False, form, 'S0001')
-
+        return _ResultResponse(False, form, ERROR_GENERIC)
 

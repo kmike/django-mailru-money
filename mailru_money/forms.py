@@ -6,6 +6,11 @@ from django import forms
 from mailru_money import settings, api
 from mailru_money.models import Notification, MailruOrder
 
+ERROR_GENERIC = 'S0001' # Техническая ошибка на стороне Магазина (например, недоступна база данных)
+ERROR_INVALID_NOTIFICATION = 'S0002' # Некорректный формат уведомления (например, не получен item_number)
+ERROR_SIGNATURE = 'S0003' # Ошибка проверки цифровой подписи
+ERROR_DUPLICATE_ITEM = 'S0004' # Уведомление с указанным item_number уже обработано. Остановить уведомления
+
 def _to_decimal(amount):
     # python 2.6 is not able to convert floats to decimals directly
     if isinstance(amount, float):
@@ -81,10 +86,8 @@ class MailruOrderForm(MailruMoneyForm):
     def __init__(self, amount, description, user=None, pay_for=None, message=None, currency='RUR'):
         self.order = MailruOrder.objects.create(
             amount = _to_decimal(amount),
-            description = description,
             user = user,
             pay_for = pay_for,
-            message = message,
             currency = currency,
         )
         initial={
@@ -124,10 +127,14 @@ class ResultForm(forms.ModelForm):
                 raise forms.ValidationError(e)
         return self.cleaned_data['issuer_id']
 
+    @classmethod
+    def _get_signature(cls, data):
+        return api.signature(cls.SECRET_KEY, data, hash_secret=False)
+
     def clean(self):
-        sig = api.signature(self.SECRET_KEY, self.cleaned_data, hash_secret=False)
+        sig = self._get_signature(self.cleaned_data)
         if sig != self.cleaned_data['signature']:
-            raise forms.ValidationError('S0003')
+            raise forms.ValidationError(ERROR_SIGNATURE)
 
         self.post_clean_issuer_id()
         return self.cleaned_data
@@ -137,10 +144,35 @@ class ResultForm(forms.ModelForm):
         self.cleaned_data['issuer_id'] = base64.b64decode(issuer_id.encode('ascii'))
 
     def error_code(self):
-        if 'item_number' in self.errors and self.errors['item_number'][0] == 'S0004':
-            return 'S0004'
+        if ERROR_DUPLICATE_ITEM in self.errors.get('item_number', []):
+            return ERROR_DUPLICATE_ITEM
 
-        if 'signature' in self.errors and self.errors['signature'][0] == 'S0003':
-            return 'S0003'
+        if ERROR_DUPLICATE_ITEM in self.non_field_errors():
+            return ERROR_DUPLICATE_ITEM
 
-        return 'S0002'
+        if ERROR_SIGNATURE in self.errors.get('signature', []):
+            return ERROR_SIGNATURE
+
+        return ERROR_INVALID_NOTIFICATION
+
+
+class OrderResultForm(ResultForm):
+    """
+    Result form with mandatory MoneyOrder handling.
+    """
+    def clean(self):
+        data = super(OrderResultForm, self).clean()
+        issuer_id = data['issuer_id']
+        try:
+            self._order = MailruOrder.objects.get(issuer_id=issuer_id)
+        except (MailruOrder.DoesNotExist, ValueError):
+            raise forms.ValidationError(ERROR_INVALID_NOTIFICATION)
+        return data
+
+    def save(self, commit=True):
+        assert commit==True, 'commit=False is not supported'
+        notification = super(OrderResultForm, self).save(commit)
+        notification._update_order(self._order)
+        return notification
+
+

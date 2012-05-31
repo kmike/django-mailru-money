@@ -17,8 +17,10 @@ class NotificationAdmin(admin.ModelAdmin):
     ordering = ['-item_number']
 
 class MailruOrderAdmin(SalmonellaMixin, admin.ModelAdmin):
-    list_display = ['issuer_id', 'amount', 'user', 'created_at']
-    readonly_fields = ['user']
+    list_display = ['issuer_id', 'amount', 'status', 'user', 'created_at', 'updated_at', 'currency']
+    list_filter = ['status']
+    readonly_fields = ['created_at', 'updated_at']
+    raw_id_fields = ['user']
     salmonella_fields = ['user']
     ordering = ['-issuer_id']
 
