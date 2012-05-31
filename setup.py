@@ -14,7 +14,7 @@ except NameError:
     # python3 doesn't need this
     pass
 
-version='0.0.3'
+version='0.1'
 
 setup(
     name='django-mailru-money',
@@ -31,7 +31,7 @@ setup(
     long_description = open('README.rst').read(),
 
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
