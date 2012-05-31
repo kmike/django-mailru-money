@@ -32,7 +32,8 @@ ResultURL (который нужно сообщить в money.mail.ru) в эт�
 будет ``http://your-site.com/mailru-money/result/``.
 
 Затем добавьте ``'mailru_money'`` в INSTALLED_APPS и выполните syncdb
-(migrate, если используется South).
+(migrate, если используется South). В INSTALLED_APPS также должны быть
+``'django.contrib.auth'`` и ``'django.contrib.contenttypes'``.
 
 Использование
 =============

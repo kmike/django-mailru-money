@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, print_function
 import base64
+from decimal import Decimal
 from django import forms
 from mailru_money import settings, api
-from mailru_money.models import Notification
+from mailru_money.models import Notification, MailruOrder
+
+def _to_decimal(amount):
+    # python 2.6 is not able to convert floats to decimals directly
+    if isinstance(amount, float):
+        return Decimal("%.15g" % amount)
+    return Decimal(amount)
+
 
 class HiddenForm(forms.Form):
     """ A form with all fields hidden """
@@ -15,7 +23,7 @@ class HiddenForm(forms.Form):
 
 class MailruMoneyForm(HiddenForm):
     """
-    money.mail.ru helper form. It is not for validating data.
+    Low-level money.mail.ru helper form. It is not for validating data.
     It can be used to output html.
 
     Pass all the fields to the form's 'initial' argument::
@@ -54,6 +62,41 @@ class MailruMoneyForm(HiddenForm):
 
         signature = api.signature(self.SECRET_KEY, self.initial, hash_secret=True)
         self.fields['signature'].initial = signature
+
+
+class MailruOrderForm(MailruMoneyForm):
+    """
+    High-level money.mail.ru helper form.
+    Auto-creates MailruOrder instances.
+
+    ::
+
+        item = Item.objects.get(pk=item_pk)
+        form = MailruOrderForm(15, u'оплата товара',
+            user = request.user,
+            pay_for = item,
+        )
+
+    """
+    def __init__(self, amount, description, user=None, pay_for=None, message=None, currency='RUR'):
+        self.order = MailruOrder.objects.create(
+            amount = _to_decimal(amount),
+            description = description,
+            user = user,
+            pay_for = pay_for,
+            message = message,
+            currency = currency,
+        )
+        initial={
+            'amount': str(amount),
+            'description': description,
+            'issuer_id': str(self.order.issuer_id),
+            'keep_uniq': '1',
+            'currency': currency,
+        }
+        if message is not None:
+            initial['message'] = message
+        super(MailruOrderForm, self).__init__(initial=initial)
 
 
 class ResultForm(forms.ModelForm):

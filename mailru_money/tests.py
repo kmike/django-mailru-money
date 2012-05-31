@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals
 from django.utils import unittest
+from django.db import models
+from django.test import TestCase
 from mailru_money import api, forms
+from mailru_money.models import MailruOrder, Notification
 
 SECRET_KEY = 'secret_key'
 SIGNATURE = '93e6332ab1e719b2e6244ffe0ab12045349f425f'
@@ -35,6 +38,4 @@ class FormTest(unittest.TestCase):
 
         self.assertIn(SIGNATURE, form_rendered)
         self.assertNotIn('keep_uniq', form_rendered)
-
-
 

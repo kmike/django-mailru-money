@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import RequestFactory
-from mailru_money.models import Notification
-from mailru_money.forms import ResultForm
+
+from mailru_money.models import Notification, MailruOrder
+from mailru_money.forms import ResultForm, MailruOrderForm
 from mailru_money.views import mailru_money_result
 from mailru_money import signals
+
+from test_project.test_app.models import Item
 
 # Test data from official example.
 # It is incorrect because issuer_id is not properly base64-encoded.
@@ -65,5 +68,28 @@ class MailruMoneyTest(TestCase):
 
         notification = Notification.objects.all()[0]
         self.assertEqual(notification.issuer_id, '543-TSH')
+
+
+class OrderTest(TestCase):
+    def test_order_form(self):
+        item = Item.objects.create(name='хомячок')
+        form = MailruOrderForm(100, 'аренда хомячка', pay_for=item)
+        self.assertFalse(form.order.is_paid())
+        self.assertEqual(form.order.amount, 100)
+
+        notification = Notification.objects.create(
+            type = Notification.PAYMENT,
+            status = Notification.PAID,
+            item_number = '123',
+            issuer_id = form.order.pk,
+            serial = '123',
+            auth_method = Notification.SHA
+        )
+
+        # reload order
+        order = MailruOrder.objects.get(pk=form.order.pk)
+        self.assertEqual(notification.mailru_order(), order)
+        self.assertTrue(order.is_paid())
+        self.assertEqual(order.pay_for, item)
 
 
