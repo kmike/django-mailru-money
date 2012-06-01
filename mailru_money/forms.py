@@ -91,7 +91,7 @@ class MailruOrderForm(MailruMoneyForm):
             currency = currency,
         )
         initial={
-            'amount': str(amount),
+            'sum': str(amount),
             'description': description,
             'issuer_id': str(self.order.issuer_id),
             'keep_uniq': '1',

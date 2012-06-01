@@ -14,7 +14,7 @@ except NameError:
     # python3 doesn't need this
     pass
 
-version='0.1.1'
+version='0.1.2'
 
 setup(
     name='django-mailru-money',
